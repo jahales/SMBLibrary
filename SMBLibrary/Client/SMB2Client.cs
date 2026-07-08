@@ -60,6 +60,7 @@ namespace SMBLibrary.Client
         private byte[] m_preauthIntegrityHashValue; // SMB 3.1.1
         private ushort m_availableCredits = 1;
         private bool m_connectionSupportsMultiCredit = false;
+        private IAuthenticationClient m_authenticationClient;
 
         public SMB2Client() : this(DefaultResponseTimeoutInMilliseconds)
         {
@@ -248,7 +249,7 @@ namespace SMBLibrary.Client
 
         public NTStatus Login(string domainName, string userName, string password, AuthenticationMethod authenticationMethod)
         {
-            string spn = string.Format("cifs/{0}", m_serverName);
+            string spn = CreateSpn(m_serverName);
             NTLMAuthenticationClient authenticationClient = new NTLMAuthenticationClient(domainName, userName, password, spn, authenticationMethod);
             return Login(authenticationClient);
         }
@@ -298,6 +299,7 @@ namespace SMBLibrary.Client
                 {
                     m_sessionID = response.Header.SessionID;
                     m_sessionKey = authenticationClient.GetSessionKey();
+                    m_authenticationClient = authenticationClient;
                     SessionFlags sessionFlags = finalSessionSetupResponse.SessionFlags;
                     if ((sessionFlags & SessionFlags.IsGuest) > 0)
                     {
@@ -762,6 +764,14 @@ namespace SMBLibrary.Client
             }
         }
 
+        public SMBTransportType Transport
+        {
+            get
+            {
+                return m_transport;
+            }
+        }
+
         public bool IsConnected
         {
             get
@@ -804,6 +814,11 @@ namespace SMBLibrary.Client
             {
                 m_isConnected = false;
             }
+        }
+
+        private static string CreateSpn(string serverAddress)
+        {
+            return $"cifs/{serverAddress}";
         }
     }
 }

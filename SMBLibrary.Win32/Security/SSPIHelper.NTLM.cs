@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2014-2017 Tal Aloni <tal.aloni.il@gmail.com>. All rights reserved.
+﻿/* Copyright (C) 2014-2026 Tal Aloni <tal.aloni.il@gmail.com>. All rights reserved.
  * 
  * You can redistribute this program and/or modify it under the terms of
  * the GNU Lesser Public License as published by the Free Software Foundation,
@@ -59,32 +59,8 @@ namespace SMBLibrary.Win32.Security
         public static byte[] GetType1Message(string domainName, string userName, string password, out SecHandle clientContext)
         {
             SecHandle credentialsHandle = AcquireNTLMCredentialsHandle(domainName, userName, password);
-            clientContext = new SecHandle();
-            SecBuffer outputBuffer = new SecBuffer(MAX_TOKEN_SIZE);
-            SecBufferDesc output = new SecBufferDesc(outputBuffer);
-            uint contextAttributes;
-            SECURITY_INTEGER expiry;
-
-            uint result = InitializeSecurityContext(ref credentialsHandle, IntPtr.Zero, null, ISC_REQ_CONFIDENTIALITY | ISC_REQ_INTEGRITY, 0, SECURITY_NATIVE_DREP, IntPtr.Zero, 0, ref clientContext, ref output, out contextAttributes, out expiry);
-            if (result != SEC_E_OK && result != SEC_I_CONTINUE_NEEDED)
-            {
-                if (result == SEC_E_INVALID_HANDLE)
-                {
-                    throw new Exception("InitializeSecurityContext failed, Invalid handle");
-                }
-                else if (result == SEC_E_BUFFER_TOO_SMALL)
-                {
-                    throw new Exception("InitializeSecurityContext failed, Buffer too small");
-                }
-                else
-                {
-                    throw new Exception("InitializeSecurityContext failed, Error code 0x" + result.ToString("X8"));
-                }
-            }
+            byte[] messageBytes = GetInitialMessage(credentialsHandle, out clientContext);
             FreeCredentialsHandle(ref credentialsHandle);
-            byte[] messageBytes = output.GetBufferBytes(0);
-            outputBuffer.Dispose();
-            output.Dispose();
             return messageBytes;
         }
 
